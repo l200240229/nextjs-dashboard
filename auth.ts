@@ -13,30 +13,31 @@ async function getUser(email: string): Promise<User | undefined> {
   return user[0];
 }
 
-export const { auth, signIn, signOut } = NextAuth({
+export const {
+  auth,
+  signIn,
+  signOut,
+  handlers, // 🔴 INI KUNCI
+} = NextAuth({
   ...authConfig,
   providers: [
     Credentials({
       async authorize(credentials, _request) {
-        const parsedCredentials = z
+        const parsed = z
           .object({
             email: z.string().email(),
             password: z.string().min(6),
           })
           .safeParse(credentials);
 
-        if (!parsedCredentials.success) return null;
+        if (!parsed.success) return null;
 
-        const { email, password } = parsedCredentials.data;
+        const { email, password } = parsed.data;
         const user = await getUser(email);
         if (!user) return null;
 
-        const passwordsMatch = await bcrypt.compare(
-          password,
-          user.password,
-        );
-
-        if (!passwordsMatch) return null;
+        const match = await bcrypt.compare(password, user.password);
+        if (!match) return null;
 
         return {
           id: user.id,
